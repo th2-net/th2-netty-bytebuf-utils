@@ -168,3 +168,7 @@ dependencies {
     implementation group: 'org.jetbrains.kotlin', name: 'kotlin-stdlib-jdk8', version: kotlin_version
     implementation group: 'io.netty', name: 'netty-buffer', version: '4.1.79.Final'
 }
+
+dependencyLocking {    
+    lockAllConfigurations()
+}
