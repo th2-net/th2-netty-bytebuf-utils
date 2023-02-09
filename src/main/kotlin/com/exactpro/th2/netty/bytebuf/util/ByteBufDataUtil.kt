@@ -19,69 +19,101 @@
 package com.exactpro.th2.netty.bytebuf.util
 
 import io.netty.buffer.ByteBuf
-import io.netty.buffer.ByteBufUtil
 import java.nio.charset.Charset
 import java.util.*
 
-const val DEFAULT_PAD_CHAR = '\u0000'
+const val DEFAULT_END_CHAR = '\u0000'
 
-fun ByteBuf.readAsciiChar(): Char = this.readCharSequence(1, Charsets.US_ASCII)[0]
+fun ByteBuf.readAsciiChar(): Char = (readByte().toInt() and 0xFF).toChar()
 
-fun ByteBuf.writeAsciiChar(value: Char): ByteBuf = this.apply {
-    require(value.code < 256) {
-        "The $value char with ${value.code} code is out of ASCII table"
-    }
-    ByteBufUtil.writeAscii(this, value.toString())
+fun ByteBuf.writeAsciiChar(value: Char): ByteBuf {
+    require(value.code <= Byte.MAX_VALUE) { "The $value char with ${value.code} code is out of ASCII table" }
+    writeByte(value.code)
+    return this
 }
 
+/**
+ * Reads specified bytes, decodes them to string via specific charset and discards tail after the end character
+ * @param length is size of read bytes
+ */
 @JvmOverloads
-fun ByteBuf.readStringPadEnd(
+fun ByteBuf.readString(
     length: Int,
-    padChar: Char = DEFAULT_PAD_CHAR,
+    endChar: Char = DEFAULT_END_CHAR,
     charset: Charset = Charsets.US_ASCII
-): String = readCharSequence(length, charset).toString().substringBefore(padChar)
+): CharSequence {
+    return readCharSequence(length, charset).run {
+        when (val index = indexOf(endChar)) {
+            -1 -> this
+            else -> subSequence(0, index)
+        }
+    }
+}
 
+/**
+ * Writes string value via specific charset and padded the end characters to specified length
+ * @param length is size of write bytes
+ */
 @JvmOverloads
-fun ByteBuf.writeStringPadEnd(
+fun ByteBuf.writeString(
     value: String,
     length: Int = value.length,
-    padChar: Char = DEFAULT_PAD_CHAR,
+    endChar: Char = DEFAULT_END_CHAR,
     charset: Charset = Charsets.US_ASCII
-): ByteBuf = this.apply {
+): ByteBuf {
     require(value.length <= length) {
         "The $value value with ${value.length} length is longer than the $length limit"
     }
-    writeBytes(value.padEnd(length, padChar).toByteArray(charset))
+
+    val writeIndex = writerIndex()
+    writeBytes(value.toByteArray(charset))
+
+    val actualLength = writerIndex() - writeIndex
+    when {
+        actualLength < length -> {
+            val endBytes = endChar.toString().toByteArray(charset)
+            val endLength = length - actualLength
+
+            require(endLength % endBytes.size == 0) {
+                "The '$value' ($actualLength bytes in $charset) string can't be encoded to $length bytes using the '$endChar' (${endBytes.size} bytes in $charset) end char"
+            }
+
+            repeat(endLength / endBytes.size) { writeBytes(endBytes) }
+        }
+
+        actualLength > length -> error("The '$value' ($actualLength bytes in $charset) string can't be encoded to $length bytes")
+    }
+    return this
 }
 
-fun ByteBuf.readUInt8(): UByte = this.readUnsignedByte().toUByte()
+fun ByteBuf.readUInt8(): UByte = readUnsignedByte().toUByte()
 
-fun ByteBuf.writeUInt8(value: UByte): ByteBuf = this.writeByte(value.toInt())
+fun ByteBuf.writeUInt8(value: UByte): ByteBuf = writeByte(value.toInt())
 
-fun ByteBuf.readInt8(): Byte = this.readByte()
+fun ByteBuf.readInt8(): Byte = readByte()
 
-fun ByteBuf.writeInt8(value: Byte): ByteBuf = this.writeByte(value.toInt())
+fun ByteBuf.writeInt8(value: Byte): ByteBuf = writeByte(value.toInt())
 
-fun ByteBuf.readUInt16LE(): UShort = this.readUnsignedShortLE().toUShort()
+fun ByteBuf.readUInt16LE(): UShort = readUnsignedShortLE().toUShort()
 
-fun ByteBuf.writeUInt16LE(value: UShort): ByteBuf = this.writeShortLE(value.toInt())
+fun ByteBuf.writeUInt16LE(value: UShort): ByteBuf = writeShortLE(value.toInt())
 
-fun ByteBuf.readInt16LE(): Short = this.readShortLE()
+fun ByteBuf.readInt16LE(): Short = readShortLE()
 
-fun ByteBuf.writeInt16LE(value: Short): ByteBuf = this.writeShortLE(value.toInt())
+fun ByteBuf.writeInt16LE(value: Short): ByteBuf = writeShortLE(value.toInt())
 
-fun ByteBuf.readUInt32LE(): UInt = this.readUnsignedIntLE().toUInt()
+fun ByteBuf.readUInt32LE(): UInt = readUnsignedIntLE().toUInt()
 
-fun ByteBuf.writeUInt32LE(value: UInt): ByteBuf = this.writeIntLE(value.toInt())
+fun ByteBuf.writeUInt32LE(value: UInt): ByteBuf = writeIntLE(value.toInt())
 
-fun ByteBuf.readInt32LE(): Int = this.readIntLE()
+fun ByteBuf.readInt32LE(): Int = readIntLE()
 
-fun ByteBuf.writeInt32LE(value: Int): ByteBuf = this.writeIntLE(value)
+fun ByteBuf.writeInt32LE(value: Int): ByteBuf = writeIntLE(value)
 
-fun ByteBuf.readUInt64LE(): ULong = this.readLongLE().toULong()
+fun ByteBuf.readUInt64LE(): ULong = readLongLE().toULong()
 
-fun ByteBuf.writeUInt64LE(value: ULong): ByteBuf = this.writeLongLE(value.toLong())
+fun ByteBuf.writeUInt64LE(value: ULong): ByteBuf = writeLongLE(value.toLong())
 
-fun ByteBuf.readInt64LE(): Long = this.readLongLE()
+fun ByteBuf.readInt64LE(): Long = readLongLE()
 
-fun ByteBuf.writeInt64LE(value: Long): ByteBuf = this.writeLongLE(value)
+fun ByteBuf.writeInt64LE(value: Long): ByteBuf = writeLongLE(value)

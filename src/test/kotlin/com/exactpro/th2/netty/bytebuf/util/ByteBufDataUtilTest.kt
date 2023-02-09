@@ -83,39 +83,64 @@ class ByteBufDataUtilTest {
 
         var writerIndex = buf.writerIndex()
         (value.length + 1).also { length ->
-            buf.writeStringPadEnd(value, length)
+            buf.writeString(value, length)
             assertEquals(length, buf.writerIndex() - writerIndex)
-            assertEquals(value, buf.readStringPadEnd(length))
+            assertEquals(value, buf.readString(length).toString())
         }
 
         writerIndex = buf.writerIndex()
         value.length.also { length ->
-            buf.writeStringPadEnd(value, length)
+            buf.writeString(value, length)
             assertEquals(length, buf.writerIndex() - writerIndex)
-            assertEquals(value, buf.readStringPadEnd(length))
+            assertEquals(value, buf.readString(length).toString())
         }
 
-        writerIndex = buf.writerIndex()
         (value.length - 1).also { length ->
             assertFailsWith<RuntimeException> {
-                buf.writeStringPadEnd(value, length)
+                buf.writeString(value, length)
             }.also {
                 assertEquals("The $value value with ${value.length} length is longer than the $length limit", it.message)
             }
         }
 
         writerIndex = buf.writerIndex()
-        "$value$DEFAULT_PAD_CHAR".also { padded ->
-            buf.writeStringPadEnd(padded, padded.length)
-            assertEquals(padded.length, buf.writerIndex() - writerIndex)
-            assertEquals(value, buf.readStringPadEnd(padded.length))
+        "$value$DEFAULT_END_CHAR".also { extended ->
+            buf.writeString(extended, extended.length)
+            assertEquals(extended.length, buf.writerIndex() - writerIndex)
+            assertEquals(value, buf.readString(extended.length).toString())
+        }
+
+        writerIndex = buf.writerIndex()
+        "$value$DEFAULT_END_CHAR$value$DEFAULT_END_CHAR".also { extended ->
+            buf.writeString(extended, extended.length)
+            assertEquals(extended.length, buf.writerIndex() - writerIndex)
+            assertEquals(value, buf.readString(extended.length).toString())
+        }
+
+        "\u0100".also { string ->
+            val charset = Charsets.UTF_8
+            var length = 1
+
+            assertFailsWith<RuntimeException> {
+                buf.writeString(string, length, charset = charset)
+            }.also {
+                assertEquals("The '$string' (2 bytes in $charset) string can't be encoded to $length bytes", it.message)
+            }
+
+            length = 3
+            val endChar = '\u0101'
+            assertFailsWith<RuntimeException> {
+                buf.writeString(string, length, endChar, charset)
+            }.also {
+                assertEquals("The '$string' (2 bytes in $charset) string can't be encoded to $length bytes using the '$endChar' (2 bytes in $charset) end char", it.message)
+            }
         }
     }
 
     @Test
     fun `serialize deserialize char test`() {
         val buf = Unpooled.buffer()
-        for (num in 0 .. 255) {
+        for (num in 0 .. Byte.MAX_VALUE) {
             num.toChar().run {
                 val writerIndex = buf.writerIndex()
                 val readerIndex = buf.readerIndex()
@@ -126,15 +151,22 @@ class ByteBufDataUtilTest {
             }
         }
 
-        assertFailsWith<IllegalArgumentException> {
-            buf.writeAsciiChar(256.toChar())
-        }.also {
-            assertEquals("The ${256.toChar()} char with 256 code is out of ASCII table", it.message)
+        with((Byte.MAX_VALUE.toInt() + 1).toChar()) {
+            assertFailsWith<IllegalArgumentException> {
+                buf.writeAsciiChar(this)
+            }.also {
+                assertEquals(
+                    "The $this char with $code code is out of ASCII table",
+                    it.message
+                )
+            }
         }
-        assertFailsWith<IllegalArgumentException> {
-            buf.writeAsciiChar((-1).toChar())
-        }.also {
-            assertEquals("The ${(-1).toChar()} char with 65535 code is out of ASCII table", it.message)
+        with((-1).toChar()) {
+            assertFailsWith<IllegalArgumentException> {
+                buf.writeAsciiChar(this)
+            }.also {
+                assertEquals("The $this char with $code code is out of ASCII table", it.message)
+            }
         }
     }
 }
