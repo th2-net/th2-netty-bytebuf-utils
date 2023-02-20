@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2023 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,9 +54,21 @@ operator fun ByteBuf.get(index: Int): Byte = getByte(index)
 
 operator fun ByteBuf.set(index: Int, value: Byte): ByteBuf = setByte(index, value.toInt())
 
-fun ByteBuf.shiftReaderIndex(shift: Int): ByteBuf = readerIndex(readerIndex() + shift)
+var ByteBuf.readerIndex: Int
+    get() = readerIndex()
+    set(value) {
+        readerIndex(value)
+    }
 
-fun ByteBuf.shiftWriterIndex(shift: Int): ByteBuf = writerIndex(writerIndex() + shift)
+var ByteBuf.writerIndex: Int
+    get() = writerIndex()
+    set(value) {
+        writerIndex()
+    }
+
+fun ByteBuf.shiftReaderIndex(shift: Int): ByteBuf = apply { readerIndex += shift }
+
+fun ByteBuf.shiftWriterIndex(shift: Int): ByteBuf = apply { writerIndex += shift }
 
 fun ByteBuf.isEmpty(): Boolean = readableBytes() == 0
 
@@ -134,12 +146,16 @@ fun ByteBuf.contains(
     toIndex: Int = writerIndex(),
 ): Boolean = indexOf(value, fromIndex, toIndex) >= 0
 
+operator fun ByteBuf.contains(value: Byte) = contains(value, readerIndex(), writerIndex())
+
 @JvmOverloads
 fun ByteBuf.contains(
     value: ByteArray,
     fromIndex: Int = readerIndex(),
     toIndex: Int = writerIndex(),
 ): Boolean = indexOf(value, fromIndex, toIndex) >= 0
+
+operator fun ByteBuf.contains(value: ByteArray) = contains(value, readerIndex(), writerIndex())
 
 @JvmOverloads
 fun ByteBuf.contains(
@@ -148,6 +164,8 @@ fun ByteBuf.contains(
     toIndex: Int = writerIndex(),
     charset: Charset = UTF_8,
 ): Boolean = contains(value.toByteArray(charset), fromIndex, toIndex)
+
+operator fun ByteBuf.contains(value: String) = contains(value, readerIndex(), writerIndex())
 
 fun ByteBuf.matches(value: ByteArray, atIndex: Int): Boolean {
     requireReadable(atIndex)
@@ -370,7 +388,7 @@ fun ByteBuf.remove(fromIndex: Int, toIndex: Int): ByteBuf = apply {
         writerIndex() -> writerIndex(fromIndex)
         else -> {
             setBytes(fromIndex, slice(toIndex, writerIndex() - toIndex))
-            shiftWriterIndex(-regionLength(fromIndex, toIndex))
+            writerIndex -= regionLength(fromIndex, toIndex)
         }
     }
 }
@@ -564,7 +582,7 @@ fun ByteBuf.trimStart(
     vararg values: Byte,
     fromIndex: Int = readerIndex(),
     toIndex: Int = writerIndex(),
-): ByteBuf = trimStart(fromIndex, toIndex) { it in values }
+): ByteBuf = trimStart(fromIndex, toIndex, values::contains)
 
 @JvmOverloads
 fun ByteBuf.trimEnd(
@@ -582,7 +600,7 @@ fun ByteBuf.trimEnd(
     vararg values: Byte,
     fromIndex: Int = readerIndex(),
     toIndex: Int = writerIndex(),
-): ByteBuf = trimEnd(fromIndex, toIndex) { it in values }
+): ByteBuf = trimEnd(fromIndex, toIndex, values::contains)
 
 @JvmOverloads
 fun ByteBuf.trim(
@@ -603,7 +621,7 @@ fun ByteBuf.trim(
     vararg values: Byte,
     fromIndex: Int = readerIndex(),
     toIndex: Int = writerIndex(),
-): ByteBuf = trim(fromIndex, toIndex) { it in values }
+): ByteBuf = trim(fromIndex, toIndex, values::contains)
 
 @JvmOverloads
 fun ByteBuf.padStart(
