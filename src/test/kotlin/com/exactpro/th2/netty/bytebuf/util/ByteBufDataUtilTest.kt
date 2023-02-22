@@ -83,21 +83,21 @@ class ByteBufDataUtilTest {
 
         var writerIndex = buf.writerIndex()
         (value.length + 1).also { length ->
-            buf.writeString(value, length)
+            buf.writePaddedString(value, length)
             assertEquals(length, buf.writerIndex() - writerIndex)
-            assertEquals(value, buf.readString(length).toString())
+            assertEquals(value, buf.readStringAndDiscard(length).toString())
         }
 
         writerIndex = buf.writerIndex()
         value.length.also { length ->
-            buf.writeString(value, length)
+            buf.writePaddedString(value, length)
             assertEquals(length, buf.writerIndex() - writerIndex)
-            assertEquals(value, buf.readString(length).toString())
+            assertEquals(value, buf.readStringAndDiscard(length).toString())
         }
 
         (value.length - 1).also { length ->
             assertFailsWith<RuntimeException> {
-                buf.writeString(value, length)
+                buf.writePaddedString(value, length)
             }.also {
                 assertEquals("The $value value with ${value.length} length is longer than the $length limit", it.message)
             }
@@ -105,16 +105,16 @@ class ByteBufDataUtilTest {
 
         writerIndex = buf.writerIndex()
         "$value$DEFAULT_END_CHAR".also { extended ->
-            buf.writeString(extended, extended.length)
+            buf.writePaddedString(extended, extended.length)
             assertEquals(extended.length, buf.writerIndex() - writerIndex)
-            assertEquals(value, buf.readString(extended.length).toString())
+            assertEquals(value, buf.readStringAndDiscard(extended.length).toString())
         }
 
         writerIndex = buf.writerIndex()
         "$value$DEFAULT_END_CHAR$value$DEFAULT_END_CHAR".also { extended ->
-            buf.writeString(extended, extended.length)
+            buf.writePaddedString(extended, extended.length)
             assertEquals(extended.length, buf.writerIndex() - writerIndex)
-            assertEquals(value, buf.readString(extended.length).toString())
+            assertEquals(value, buf.readStringAndDiscard(extended.length).toString())
         }
 
         "\u0100".also { string ->
@@ -122,7 +122,7 @@ class ByteBufDataUtilTest {
             var length = 1
 
             assertFailsWith<RuntimeException> {
-                buf.writeString(string, length, charset = charset)
+                buf.writePaddedString(string, length, charset = charset)
             }.also {
                 assertEquals("The '$string' (2 bytes in $charset) string can't be encoded to $length bytes", it.message)
             }
@@ -130,7 +130,7 @@ class ByteBufDataUtilTest {
             length = 3
             val endChar = '\u0101'
             assertFailsWith<RuntimeException> {
-                buf.writeString(string, length, endChar, charset)
+                buf.writePaddedString(string, length, endChar, charset)
             }.also {
                 assertEquals("The '$string' (2 bytes in $charset) string can't be encoded to $length bytes using the '$endChar' (2 bytes in $charset) end char", it.message)
             }

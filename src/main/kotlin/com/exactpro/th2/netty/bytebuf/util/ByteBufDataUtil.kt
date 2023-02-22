@@ -37,52 +37,50 @@ fun ByteBuf.writeAsciiChar(value: Char): ByteBuf {
  * @param length is size of read bytes
  */
 @JvmOverloads
-fun ByteBuf.readString(
+fun ByteBuf.readStringAndDiscard(
     length: Int,
     endChar: Char = DEFAULT_END_CHAR,
-    charset: Charset = Charsets.US_ASCII
-): CharSequence {
-    return readCharSequence(length, charset).run {
-        when (val index = indexOf(endChar)) {
-            -1 -> this
-            else -> subSequence(0, index)
-        }
-    }
+    charset: Charset = Charsets.UTF_8
+): CharSequence = readCharSequence(length, charset).run {
+    val index = indexOf(endChar)
+    if (index == -1) this else subSequence(0, index)
 }
 
 /**
- * Writes string value via specific charset and padded the end characters to specified length
+ * Writes string [value] and pads it to the specified [length] in bytes if necessary
  * @param length is size of write bytes
  */
 @JvmOverloads
-fun ByteBuf.writeString(
+fun ByteBuf.writePaddedString(
     value: String,
     length: Int = value.length,
-    endChar: Char = DEFAULT_END_CHAR,
-    charset: Charset = Charsets.US_ASCII
+    padChar: Char = DEFAULT_END_CHAR,
+    charset: Charset = Charsets.UTF_8
 ): ByteBuf {
     require(value.length <= length) {
         "The $value value with ${value.length} length is longer than the $length limit"
     }
 
-    val writeIndex = writerIndex()
-    writeBytes(value.toByteArray(charset))
+    val array = value.toByteArray(charset)
+    val actualLength = array.size.also {
+        check(it <= length) {
+            "The '$value' ($it bytes in $charset) string can't be encoded to $length bytes"
+        }
+    }
 
-    val actualLength = writerIndex() - writeIndex
-    when {
-        actualLength < length -> {
-            val endBytes = endChar.toString().toByteArray(charset)
-            val endLength = length - actualLength
+    writeBytes(array)
 
-            require(endLength % endBytes.size == 0) {
-                "The '$value' ($actualLength bytes in $charset) string can't be encoded to $length bytes using the '$endChar' (${endBytes.size} bytes in $charset) end char"
-            }
+    if (actualLength < length) {
+        val endBytes = padChar.toString().toByteArray(charset)
+        val endLength = length - actualLength
 
-            repeat(endLength / endBytes.size) { writeBytes(endBytes) }
+        require(endLength % endBytes.size == 0) {
+            "The '$value' ($actualLength bytes in $charset) string can't be encoded to $length bytes using the '$padChar' (${endBytes.size} bytes in $charset) end char"
         }
 
-        actualLength > length -> error("The '$value' ($actualLength bytes in $charset) string can't be encoded to $length bytes")
+        repeat(endLength / endBytes.size) { writeBytes(endBytes) }
     }
+
     return this
 }
 
