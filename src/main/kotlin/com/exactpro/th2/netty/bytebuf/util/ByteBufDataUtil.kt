@@ -68,17 +68,19 @@ fun ByteBuf.writePaddedString(
         }
     }
 
-    writeBytes(array)
+    when {
+        actualLength < length -> {
+            val endBytes = padChar.toString().toByteArray(charset)
+            val endLength = length - actualLength
 
-    if (actualLength < length) {
-        val endBytes = padChar.toString().toByteArray(charset)
-        val endLength = length - actualLength
+            require(endLength % endBytes.size == 0) {
+                "The '$value' ($actualLength bytes in $charset) string can't be encoded to $length bytes using the '$padChar' (${endBytes.size} bytes in $charset) end char"
+            }
 
-        require(endLength % endBytes.size == 0) {
-            "The '$value' ($actualLength bytes in $charset) string can't be encoded to $length bytes using the '$padChar' (${endBytes.size} bytes in $charset) end char"
+            writeBytes(array)
+            repeat(endLength / endBytes.size) { writeBytes(endBytes) }
         }
-
-        repeat(endLength / endBytes.size) { writeBytes(endBytes) }
+        else -> writeBytes(array)
     }
 
     return this
