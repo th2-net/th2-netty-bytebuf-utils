@@ -85,14 +85,14 @@ class ByteBufDataUtilTest {
         (value.length + 1).also { length ->
             buf.writePaddedString(value, length)
             assertEquals(length, buf.writerIndex() - writerIndex)
-            assertEquals(value, buf.readStringAndDiscard(length).toString())
+            assertEquals(value, buf.readPaddedString(length).toString())
         }
 
         writerIndex = buf.writerIndex()
         value.length.also { length ->
             buf.writePaddedString(value, length)
             assertEquals(length, buf.writerIndex() - writerIndex)
-            assertEquals(value, buf.readStringAndDiscard(length).toString())
+            assertEquals(value, buf.readPaddedString(length).toString())
         }
 
         (value.length - 1).also { length ->
@@ -104,17 +104,10 @@ class ByteBufDataUtilTest {
         }
 
         writerIndex = buf.writerIndex()
-        "$value$DEFAULT_END_CHAR".also { extended ->
+        "$DEFAULT_END_CHAR$value$DEFAULT_END_CHAR$value$DEFAULT_END_CHAR".also { extended ->
             buf.writePaddedString(extended, extended.length)
             assertEquals(extended.length, buf.writerIndex() - writerIndex)
-            assertEquals(value, buf.readStringAndDiscard(extended.length).toString())
-        }
-
-        writerIndex = buf.writerIndex()
-        "$value$DEFAULT_END_CHAR$value$DEFAULT_END_CHAR".also { extended ->
-            buf.writePaddedString(extended, extended.length)
-            assertEquals(extended.length, buf.writerIndex() - writerIndex)
-            assertEquals(value, buf.readStringAndDiscard(extended.length).toString())
+            assertEquals("$DEFAULT_END_CHAR$value$DEFAULT_END_CHAR$value", buf.readPaddedString(extended.length).toString())
         }
 
         "\u0100".also { string ->
@@ -140,7 +133,7 @@ class ByteBufDataUtilTest {
     @Test
     fun `serialize deserialize char test`() {
         val buf = Unpooled.buffer()
-        for (num in 0 .. Byte.MAX_VALUE) {
+        for (num in 0 .. UByte.MAX_VALUE.toInt()) {
             num.toChar().run {
                 val writerIndex = buf.writerIndex()
                 val readerIndex = buf.readerIndex()
@@ -151,7 +144,7 @@ class ByteBufDataUtilTest {
             }
         }
 
-        with((Byte.MAX_VALUE.toInt() + 1).toChar()) {
+        with((UByte.MAX_VALUE.toInt() + 1).toChar()) {
             assertFailsWith<IllegalArgumentException> {
                 buf.writeAsciiChar(this)
             }.also {
