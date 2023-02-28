@@ -176,10 +176,12 @@ configurations {
 }
 
 dependencies {
-    implementation group: 'org.jetbrains.kotlin', name: 'kotlin-stdlib-jdk8', version: kotlin_version
-    implementation group: 'io.netty', name: 'netty-buffer', version: '4.1.79.Final'
+    api platform('com.exactpro.th2:bom:4.2.0')
 
-    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter', version: '5.9.0'
+    implementation group: 'org.jetbrains.kotlin', name: 'kotlin-stdlib-jdk8', version: kotlin_version
+    implementation group: 'io.netty', name: 'netty-buffer'
+
+    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter', version: '5.9.2'
     testImplementation group: 'org.jetbrains.kotlin', name: 'kotlin-test-junit5', version: kotlin_version
     testImplementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.12.0'
 
