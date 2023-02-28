@@ -3,6 +3,7 @@ plugins {
     id 'signing'
     id 'org.jetbrains.kotlin.jvm' version "${kotlin_version}"
     id "io.github.gradle-nexus.publish-plugin" version '1.0.0'
+    id "org.owasp.dependencycheck" version "8.1.1"
 }
 
 ext {
@@ -61,6 +62,10 @@ jar {
 java {
     withJavadocJar()
     withSourcesJar()
+}
+
+test {
+    useJUnitPlatform()
 }
 
 // conditionals for publications
@@ -164,7 +169,31 @@ clean {
     delete sharedDir
 }
 
+configurations {
+    compileClasspath {
+        resolutionStrategy.activateDependencyLocking()
+    }
+}
+
 dependencies {
+    api platform('com.exactpro.th2:bom:4.2.0')
+
     implementation group: 'org.jetbrains.kotlin', name: 'kotlin-stdlib-jdk8', version: kotlin_version
-    implementation group: 'io.netty', name: 'netty-buffer', version: '4.1.79.Final'
+    implementation group: 'io.netty', name: 'netty-buffer'
+
+    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter', version: '5.9.2'
+    testImplementation group: 'org.jetbrains.kotlin', name: 'kotlin-test-junit5', version: kotlin_version
+    testImplementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.12.0'
+
+}
+
+dependencyCheck {
+    formats=['SARIF', 'JSON', 'HTML']
+    failBuildOnCVSS=5
+
+    analyzers {
+        assemblyEnabled = false
+        nugetconfEnabled = false
+        nodeEnabled = false
+    }
 }
