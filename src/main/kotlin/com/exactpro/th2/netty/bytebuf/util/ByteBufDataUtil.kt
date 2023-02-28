@@ -22,7 +22,7 @@ import io.netty.buffer.ByteBuf
 import java.nio.charset.Charset
 import java.util.*
 
-const val DEFAULT_END_CHAR = '\u0000'
+const val DEFAULT_END_CHAR = ' '
 
 fun ByteBuf.readAsciiChar(): Char = (readByte().toInt() and 0xFF).toChar()
 
