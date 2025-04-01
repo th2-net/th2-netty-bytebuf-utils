@@ -6,6 +6,10 @@ This project contains various [extension methods and properties](src/main/kotlin
 
 ## Unreleased
 
+### Fixed
+
+* writer index was not updated when using `writerIndex` extension property;
+
 ### Updated:
 
 * th2 bom now `4.11.0` that comes from th2 gradle plugins `0.2.4`
