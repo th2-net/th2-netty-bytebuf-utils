@@ -79,7 +79,7 @@ class ByteBufDataUtilTest {
     @Test
     fun `serialize deserialize string test`() {
         val buf = Unpooled.buffer()
-        val value = RandomStringUtils.randomAscii(10)
+        val value = RandomStringUtils.insecure().nextAscii(10)
 
         var writerIndex = buf.writerIndex()
         (value.length + 1).also { length ->
