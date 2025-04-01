@@ -4,6 +4,14 @@ This project contains various [extension methods and properties](src/main/kotlin
 
 # Changelog
 
+## Unreleased
+
+### Updated:
+
+* th2 bom now `4.11.0` that comes from th2 gradle plugins `0.2.4`
+* junit-jupiter now `5.12.1`
+* commons-lang3 now `3.17.0`
+
 ## 0.2.0
 
 * add ByteBuf extension functions for reading writing unsigned and signed ints, ASCII char, padded string
