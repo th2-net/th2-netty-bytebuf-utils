@@ -1,10 +1,10 @@
-# Netty ByteBuf Util (0.2.0)
+# Netty ByteBuf Util (0.3.0)
 
 This project contains various [extension methods and properties](src/main/kotlin/com/exactpro/th2/netty/bytebuf/util/ByteBufUtil.kt) for Netty's ByteBuf
 
 # Changelog
 
-## Unreleased
+## 0.3.0
 
 ### Fixed
 
