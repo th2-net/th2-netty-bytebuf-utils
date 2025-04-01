@@ -63,7 +63,7 @@ var ByteBuf.readerIndex: Int
 var ByteBuf.writerIndex: Int
     get() = writerIndex()
     set(value) {
-        writerIndex()
+        writerIndex(value)
     }
 
 fun ByteBuf.shiftReaderIndex(shift: Int): ByteBuf = apply { readerIndex += shift }
